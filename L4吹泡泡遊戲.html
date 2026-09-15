@@ -1,0 +1,2413 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>生詞直式注音飄浮泡泡樂園</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for friendly, rounded typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti for celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    :root {
+      --bubble-bg-gradient: radial-gradient(
+        circle at 35% 35%,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 255, 255, 0.25) 25%,
+        rgba(175, 235, 255, 0.35) 50%,
+        rgba(255, 185, 235, 0.4) 75%,
+        rgba(195, 245, 215, 0.45) 100%
+      );
+      --bubble-shadow: 
+        inset 0 0 25px rgba(255, 255, 255, 0.85),
+        inset 10px 10px 25px rgba(255, 160, 230, 0.45),
+        inset -10px -10px 25px rgba(110, 220, 255, 0.5),
+        0 12px 32px -6px rgba(100, 150, 230, 0.3);
+      --bubble-border: rgba(255, 255, 255, 0.8);
+      --page-gradient: linear-gradient(180deg, #bbf2f6 0%, #d8e8fc 40%, #fedfe8 85%, #fce7f3 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    body {
+      font-family: 'Zen Maru Gothic', 'Noto Sans TC', 'DFKai-SB', 'BiauKai', sans-serif;
+      overflow: hidden;
+      background: var(--page-gradient);
+      transition: background 0.8s ease;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    .soap-bubble {
+      position: absolute;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+      transition: transform 0.15s ease-out, background 0.6s ease, box-shadow 0.6s ease;
+      background: var(--bubble-bg-gradient);
+      box-shadow: var(--bubble-shadow);
+      border: 1.5px solid var(--bubble-border);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      animation: bubbleWobble 4.2s ease-in-out infinite alternate;
+    }
+
+    .soap-bubble:hover {
+      filter: brightness(1.1);
+      transform: scale(1.05);
+    }
+    .soap-bubble:active {
+      transform: scale(0.92);
+    }
+
+    /* Glossy specular reflection highlights */
+    .soap-bubble::before {
+      content: '';
+      position: absolute;
+      top: 12%;
+      left: 18%;
+      width: 28%;
+      height: 20%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0) 70%);
+      transform: rotate(-35deg);
+      pointer-events: none;
+    }
+
+    .soap-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: 14%;
+      right: 18%;
+      width: 22%;
+      height: 14%;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0.65) 0%, rgba(255, 255, 255, 0) 75%);
+      transform: rotate(40deg);
+      pointer-events: none;
+    }
+
+    @keyframes bubbleWobble {
+      0% { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+      33% { border-radius: 47% 53% 52% 48% / 53% 47% 53% 47%; }
+      66% { border-radius: 52% 48% 47% 53% / 48% 52% 48% 52%; }
+      100% { border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%; }
+    }
+
+    .word-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      padding: 4px 8px;
+      white-space: nowrap; /* 保證生詞維持單行不折行 */
+      flex-wrap: nowrap;
+      transition: transform 0.2s ease;
+    }
+
+    .char-box {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+      margin: 0 4px; /* 適度間距，避免字元擁擠 */
+      padding-right: 9px; /* 保留右側注音與聲調空間，避免被後字遮擋 */
+      flex-shrink: 0;
+    }
+
+    .chinese-char {
+      font-size: 2.35rem;
+      font-weight: 900;
+      color: #0f172a;
+      line-height: 1;
+      text-shadow: 0 1px 3px rgba(255, 255, 255, 0.95), 0 0 12px rgba(255, 255, 255, 0.85);
+      font-family: 'DFKai-SB', 'BiauKai', 'Noto Sans TC', sans-serif;
+    }
+
+    .zhuyin-col {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      margin-left: 3px;
+    }
+
+    .zhuyin-letters {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .bpmf-letter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.96rem;
+      line-height: 0.92;
+      font-weight: 900;
+      color: #0f172a;
+      -webkit-text-stroke: 0.45px #0f172a; /* 筆畫扎實加粗 */
+      font-family: 'DFKai-SB', 'BiauKai', 'Noto Sans TC', sans-serif;
+      text-shadow: 0 0 3px rgba(255, 255, 255, 0.95);
+      position: relative;
+      width: 1.15rem;
+      height: 0.96rem;
+    }
+
+    /* 聲調標記放大、加粗與精確定位 */
+    .tone-mark {
+      position: absolute;
+      font-size: 1.18rem; /* 大號聲調符號 */
+      font-weight: 900;
+      color: #e11d48;
+      -webkit-text-stroke: 0.5px #e11d48;
+      line-height: 1;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      text-shadow: 0 0 4px rgba(255, 255, 255, 0.95);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* 輕聲：緊鄰聲母（第一字）正上方，自然貼合不遙遠 */
+    .tone-light {
+      top: -0.42rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.25rem;
+      color: #dc2626;
+      -webkit-text-stroke: 0.5px #dc2626;
+    }
+
+    /* 只有聲母跟韻母（2 個符號）時：聲調符號在兩者中間（交界縫隙處） */
+    .tone-between-chars {
+      right: -0.44rem;
+      top: 0;
+      transform: translateY(-50%);
+    }
+
+    /* 有介音（3 個符號）時在介音旁邊；或只有 1 個符號時在該符號右側正中 */
+    .tone-beside-char {
+      right: -0.44rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .bg-cloud {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.5);
+      filter: blur(16px);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      transition: all 0.8s ease;
+    }
+
+    .pop-particle {
+      position: absolute;
+      pointer-events: none;
+      border-radius: 50%;
+      z-index: 50;
+      animation: particleFly 0.55s ease-out forwards;
+    }
+
+    @keyframes particleFly {
+      0% {
+        transform: translate(0, 0) scale(1.1);
+        opacity: 0.95;
+      }
+      100% {
+        transform: translate(var(--dx), var(--dy)) scale(0);
+        opacity: 0;
+      }
+    }
+
+    /* 得分飄浮動畫與任務卡片特效 */
+    .score-float {
+      position: absolute;
+      pointer-events: none;
+      z-index: 60;
+      font-weight: 900;
+      font-size: 1.5rem;
+      color: #f59e0b;
+      text-shadow: 0 2px 8px rgba(245, 158, 11, 0.45), 0 0 3px #ffffff;
+      animation: scoreFlyUp 0.85s ease-out forwards;
+    }
+
+    @keyframes scoreFlyUp {
+      0% { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+      20% { transform: translate(-50%, -70%) scale(1.25); opacity: 1; }
+      80% { transform: translate(-50%, -120%) scale(1); opacity: 1; }
+      100% { transform: translate(-50%, -150%) scale(0.85); opacity: 0; }
+    }
+
+    @keyframes cardPulseSuccess {
+      0% { transform: scale(1); box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+      50% { transform: scale(1.06); box-shadow: 0 0 24px rgba(16, 185, 129, 0.65); }
+      100% { transform: scale(1); box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+    }
+    .quest-card-success {
+      animation: cardPulseSuccess 0.5s ease-out;
+    }
+
+    @keyframes cardShakeHint {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-6px); }
+      40%, 80% { transform: translateX(6px); }
+    }
+    .quest-card-shake {
+      animation: cardShakeHint 0.4s ease-in-out;
+    }
+  </style>
+</head>
+
+<body class="relative flex flex-col justify-between select-none">
+  <!-- Background Ambient Glow Clouds -->
+  <div class="bg-cloud w-96 h-48 -top-10 -left-10" id="cloud1"></div>
+  <div class="bg-cloud w-80 h-40 top-1/3 -right-16" id="cloud2"></div>
+  <div class="bg-cloud w-96 h-56 -bottom-12 left-1/4" id="cloud3"></div>
+
+  <!-- Top Navigation & Interactive Tool Bar -->
+  <header class="relative z-20 px-3 md:px-5 py-2.5 flex flex-wrap items-center justify-between gap-2.5 backdrop-blur-md bg-white/60 border-b border-white/70 shadow-sm">
+    <div class="flex items-center space-x-2">
+      <span class="text-2xl md:text-3xl filter drop-shadow">🫧</span>
+      <div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-lg md:text-xl font-black text-slate-800 tracking-wide">
+            生詞注音飄浮泡泡
+          </h1>
+          <!-- Current Round Theme Badge -->
+          <span id="themeBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700 border border-pink-200 shadow-xs flex items-center gap-1">
+            <span id="themeDot" class="inline-block w-2 h-2 rounded-full bg-pink-500"></span>
+            <span id="themeNameText">彩虹晨光</span>
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-500 hidden sm:block">每次遊戲隨機挑選 10 個生詞練習，點破泡泡聽發音！</p>
+      </div>
+    </div>
+
+    <div class="flex items-center flex-wrap gap-2">
+      <!-- Course / Lesson Selector Dropdown -->
+      <div class="flex items-center gap-1 bg-white/90 border border-slate-200 rounded-full px-2.5 py-1 shadow-xs">
+        <span class="text-xs">📚</span>
+        <label for="lessonSelect" class="text-xs font-bold text-slate-600 hidden md:inline">課程：</label>
+        <select id="lessonSelect" class="text-xs font-black text-slate-800 bg-transparent focus:outline-none cursor-pointer">
+          <!-- Populated dynamically via JS -->
+        </select>
+      </div>
+
+      <!-- Speed Segmented Control: 慢, 中, 快 -->
+      <div class="flex items-center bg-slate-100/90 p-0.5 rounded-full border border-slate-200 shadow-xs">
+        <span class="text-[11px] font-bold text-slate-500 px-1.5 hidden lg:inline">速度:</span>
+        <button id="speedSlow" class="speed-btn px-2.5 py-1 text-xs font-black rounded-full transition text-slate-600 hover:text-slate-900" data-speed="0.5">🐢 慢</button>
+        <button id="speedNormal" class="speed-btn px-2.5 py-1 text-xs font-black rounded-full transition bg-white text-indigo-600 shadow-xs" data-speed="1.0">🚶 中</button>
+        <button id="speedFast" class="speed-btn px-2.5 py-1 text-xs font-black rounded-full transition text-slate-600 hover:text-slate-900" data-speed="1.8">🐇 快</button>
+      </div>
+
+      <!-- Action Buttons -->
+      <button id="btnNewRound" title="隨機換一組 10 個生詞並變換泡泡顏色" class="px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white text-xs md:text-sm font-black shadow-sm flex items-center gap-1 transition transform active:scale-95">
+        <span>🎲</span>
+        <span>換新10詞</span>
+      </button>
+
+      <button id="btnVoiceToggle" class="px-2.5 py-1.5 rounded-full bg-white/85 hover:bg-white text-slate-700 text-xs font-bold shadow-xs border border-white flex items-center gap-1 transition">
+        <span id="voiceIcon">🔊</span>
+        <span id="voiceText" class="hidden sm:inline">語音: 開</span>
+      </button>
+
+      <button id="btnBreeze" class="px-2.5 py-1.5 rounded-full bg-sky-100/90 hover:bg-sky-200 text-sky-700 text-xs font-bold shadow-xs border border-sky-200 flex items-center gap-1 transition">
+        <span>🌬️</span>
+        <span class="hidden sm:inline">微風</span>
+      </button>
+
+      <button id="btnAddWord" class="px-2.5 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black shadow-xs flex items-center gap-1 transition transform active:scale-95">
+        <span>➕</span>
+        <span>加字詞</span>
+      </button>
+
+      <button id="btnLessonBook" class="px-3 py-1.5 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white text-xs md:text-sm font-black shadow-xs flex items-center gap-1 transition transform active:scale-95">
+        <span>📖</span>
+        <span>生詞庫</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Playground for Bubbles -->
+  <main id="bubblePlayground" class="relative flex-1 w-full h-full overflow-hidden z-10">
+    <!-- Bubble DOM elements are dynamically injected here -->
+
+    <!-- 左上角隨機生詞圖片任務看板 -->
+    <div id="questTargetCard" class="absolute top-3 left-3 z-30 bg-white/90 backdrop-blur-md rounded-2xl p-2.5 sm:p-3 shadow-lg border-2 border-indigo-200 transition duration-200 flex flex-col items-center max-w-[130px] sm:max-w-[155px]">
+      <!-- 得分計數徽章 -->
+      <div class="flex items-center justify-between w-full mb-1 px-0.5">
+        <div class="flex items-center gap-1">
+          <span class="text-xs sm:text-sm">⭐</span>
+          <span class="text-[11px] sm:text-xs font-black text-slate-600">得分:</span>
+          <span id="scoreDisplay" class="text-sm sm:text-base font-black text-amber-500 transition duration-150">0</span>
+        </div>
+        <button id="btnQuestVoiceHint" title="聽發音提示" class="w-6 h-6 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center transition active:scale-90">
+          🔊
+        </button>
+      </div>
+
+      <!-- 提示文字 -->
+      <div class="text-[10px] sm:text-[11px] font-black text-indigo-700 mb-1 flex items-center gap-1">
+        <span>🎯 找找看：</span>
+      </div>
+
+      <!-- 生詞插畫圖片展示框 -->
+      <div id="questImageContainer" class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl bg-gradient-to-b from-indigo-50/70 to-pink-50/70 border border-indigo-100 flex items-center justify-center overflow-hidden p-1 shadow-inner relative cursor-pointer group" title="點擊聽提示">
+        <!-- SVG 插畫由 JS 動態注入 -->
+      </div>
+
+      <!-- 輔助國字提示（可切換展開/隱藏） -->
+      <div class="mt-1.5 flex items-center justify-center w-full">
+        <button id="btnToggleWordHint" class="text-[10px] font-bold text-slate-400 hover:text-indigo-600 underline transition">
+          💡 看答案提示
+        </button>
+        <span id="questWordHintText" class="text-xs font-black text-indigo-600 hidden"></span>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bottom Quick Progress & Round Target Words Tray -->
+  <footer class="relative z-20 px-3 py-2 backdrop-blur-md bg-white/60 border-t border-white/70 flex flex-col md:flex-row items-center justify-between gap-2">
+    <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1">
+        <span class="text-xs font-black text-slate-700">本局進度：</span>
+        <span id="roundCounterText" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">第 1 局</span>
+      </div>
+      <div class="w-32 sm:w-44 bg-slate-200/90 rounded-full h-3.5 overflow-hidden p-0.5 border border-white">
+        <div id="progressBar" class="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%;"></div>
+      </div>
+      <span id="progressText" class="text-xs font-black text-pink-600">0 / 10 個生詞</span>
+    </div>
+
+    <!-- Quick Target Word Badges for current round -->
+    <div id="badgesContainer" class="flex flex-wrap gap-1.5 justify-center max-w-2xl">
+      <!-- Injected 10 round word chips -->
+    </div>
+  </footer>
+
+  <!-- Lesson Word Bank Modal (生詞庫手冊) -->
+  <div id="modalCollection" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-4">
+    <!-- 擴大視窗寬度至 max-w-2xl，確保條目左右有充足空間 -->
+    <div class="bg-white/95 rounded-3xl p-4 sm:p-6 max-w-2xl w-full shadow-2xl border-4 border-indigo-200 flex flex-col max-h-[88vh]">
+      <div class="flex justify-between items-center pb-3 border-b border-indigo-100">
+        <div class="flex items-center gap-2">
+          <span class="text-2xl">📖</span>
+          <div>
+            <h2 class="text-lg md:text-xl font-black text-slate-800" id="modalLessonTitle">課程生字手冊</h2>
+            <p class="text-xs text-slate-500" id="modalLessonSubtitle">點擊生詞可直接聽語音發音：</p>
+          </div>
+        </div>
+        <button id="btnCloseModal" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 flex items-center justify-center transition">✕</button>
+      </div>
+
+      <!-- Tab switch: 本局 10 詞 vs 課程完整生字庫 -->
+      <div class="flex items-center gap-2 my-3">
+        <button id="tabCurrentRound" class="flex-1 py-1.5 text-xs font-black rounded-xl bg-indigo-500 text-white shadow-xs transition">
+          🎯 本局隨機 10 詞 (<span id="tabRoundCount">0</span>/10)
+        </button>
+        <button id="tabAllLesson" class="flex-1 py-1.5 text-xs font-black rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition">
+          📚 本課全部字庫 (<span id="tabTotalCount">27</span>詞)
+        </button>
+      </div>
+      
+      <!-- 改為單欄縱向列表 (flex-col)，徹底解決雙欄時修改與刪除按鈕被遮擋覆蓋的問題 -->
+      <div id="modalWordList" class="flex flex-col gap-2.5 overflow-y-auto p-1 flex-1 pr-1.5">
+        <!-- Injected list of words with Zhuyin -->
+      </div>
+
+      <div class="mt-3 pt-3 border-t border-indigo-100 flex flex-wrap justify-between items-center gap-2">
+        <button id="btnModalStartNewRound" class="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-xs transition flex items-center gap-1">
+          <span>🎲</span>
+          <span>隨機換新一局 (10詞)</span>
+        </button>
+        <div class="flex items-center gap-3">
+          <button id="btnRestoreDefaults" class="text-xs text-indigo-600 hover:text-indigo-800 underline transition font-bold">恢復本課預設字詞</button>
+          <button id="btnResetProgress" class="text-xs text-slate-400 hover:text-rose-500 underline transition">重設本局紀錄</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Word Modal (修改生詞視窗) -->
+  <div id="modalEditWord" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white/95 rounded-3xl p-5 md:p-6 max-w-md w-full shadow-2xl border-4 border-indigo-200 flex flex-col max-h-[90vh]">
+      <div class="flex justify-between items-center pb-3 border-b border-indigo-100">
+        <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2">
+          <span>✏️</span> 修改生詞與直式注音
+        </h2>
+        <button id="btnCloseEditModal" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-600 font-bold hover:bg-indigo-100 flex items-center justify-center transition">✕</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 py-3 pr-1 space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">生詞國字文字：</label>
+          <input id="inputEditWordText" type="text" maxlength="4" class="w-full px-3 py-2 border-2 border-indigo-200 rounded-xl focus:outline-none focus:border-indigo-500 font-black text-slate-700 text-base">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">各字注音與聲調設定：</label>
+          <div id="editCharSetupList" class="space-y-2.5"></div>
+        </div>
+
+        <div id="editWordError" class="text-xs text-rose-500 font-bold hidden"></div>
+      </div>
+
+      <div class="pt-3 border-t border-indigo-100 flex items-center justify-end gap-2">
+        <button id="btnCancelEditWord" class="px-4 py-2 rounded-xl text-slate-500 font-bold text-xs hover:bg-slate-100 transition">取消</button>
+        <button id="btnConfirmEditWord" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md transition transform active:scale-95 flex items-center gap-1">
+          <span>💾</span>
+          <span>儲存修改</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Word Addition Modal -->
+  <div id="modalAddWord" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white/95 rounded-3xl p-5 md:p-6 max-w-md w-full shadow-2xl border-4 border-emerald-200 flex flex-col max-h-[90vh]">
+      <div class="flex justify-between items-center pb-3 border-b border-emerald-100">
+        <h2 class="text-lg md:text-xl font-black text-slate-800 flex items-center gap-2">
+          <span>➕</span> 新增生詞至課程
+        </h2>
+        <button id="btnCloseAddModal" class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 font-bold hover:bg-emerald-200 flex items-center justify-center transition">✕</button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 py-3 pr-1 space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">選擇要加入的課程：</label>
+          <select id="selectTargetLesson" class="w-full px-3 py-2 border-2 border-emerald-200 rounded-xl font-bold text-slate-700 text-xs bg-white">
+            <!-- Dynamically populated -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">1. 輸入生詞文字（2~4 字）：</label>
+          <input id="inputNewWordText" type="text" maxlength="4" placeholder="例如：溜滑梯、彩虹、小松鼠" class="w-full px-3 py-2 border-2 border-emerald-200 rounded-xl focus:outline-none focus:border-emerald-500 font-black text-slate-700 text-base">
+        </div>
+
+        <!-- Quick sample tag buttons -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] text-slate-400 font-medium">快捷生詞：</span>
+          <button type="button" class="btn-sample-word px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100" data-word="彩虹" data-bpmf="ㄘㄞˇ,ㄏㄨㄥˊ">彩虹</button>
+          <button type="button" class="btn-sample-word px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100" data-word="溜滑梯" data-bpmf="ㄌㄧㄡ,ㄏㄨㄚˊ,ㄊㄧ">溜滑梯</button>
+          <button type="button" class="btn-sample-word px-2 py-0.5 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg hover:bg-emerald-100" data-word="小松鼠" data-bpmf="ㄒㄧㄠˇ,ㄙㄨㄥ,ㄕㄨˇ">小松鼠</button>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">2. 設定直式注音與聲調：</label>
+          <div id="charSetupList" class="space-y-2.5">
+            <p class="text-xs text-slate-400 italic py-2">請先在上方輸入生詞文字...</p>
+          </div>
+        </div>
+
+        <div id="addWordError" class="text-xs text-rose-500 font-bold hidden"></div>
+      </div>
+
+      <div class="pt-3 border-t border-emerald-100 flex items-center justify-end gap-2">
+        <button id="btnCancelAddWord" class="px-4 py-2 rounded-xl text-slate-500 font-bold text-xs hover:bg-slate-100 transition">取消</button>
+        <button id="btnConfirmAddWord" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-md transition transform active:scale-95 flex items-center gap-1">
+          <span>🎈</span>
+          <span>加入字庫並放入本局</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Celebration Victory Dialog -->
+  <div id="modalVictory" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-4 border-amber-300 text-center transform scale-95 transition duration-300">
+      <div class="text-5xl mb-2 animate-bounce">🏆</div>
+      <h3 class="text-xl font-black text-slate-800">太厲害了！</h3>
+      <p class="text-xs text-slate-600 mt-1 mb-4">你已經完成了本局所有的 10 個生詞！全部戳破囉！</p>
+      
+      <div class="flex flex-col gap-2">
+        <button id="btnVictoryNextRound" class="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-black text-sm shadow-md transition transform active:scale-95 flex items-center justify-center gap-1">
+          <span>🎲</span>
+          <span>換新一局 (換一組詞 & 換顏色)</span>
+        </button>
+        <button id="btnVictoryClose" class="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition">
+          關閉繼續戳泡泡
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Built-in Lesson Repository with Taiwan Vertical Zhuyin
+    // Includes L4 吹泡泡 full 27 vocabulary items + L5 example lesson
+    const DEFAULT_LESSONS = [
+      {
+        id: "L4",
+        name: "L4 吹泡泡",
+        words: [
+          {
+            id: "L4_01",
+            text: "吹泡泡",
+            chars: [
+              { char: "吹", bpmf: ["ㄔ", "ㄨ", "ㄟ"], tone: "" },
+              { char: "泡", bpmf: ["ㄆ", "ㄠ"], tone: "ˋ" },
+              { char: "泡", bpmf: ["ㄆ", "ㄠ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_02",
+            text: "燈泡",
+            chars: [
+              { char: "燈", bpmf: ["ㄉ", "ㄥ"], tone: "" },
+              { char: "泡", bpmf: ["ㄆ", "ㄠ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_03",
+            text: "走路",
+            chars: [
+              { char: "走", bpmf: ["ㄗ", "ㄡ"], tone: "ˇ" },
+              { char: "路", bpmf: ["ㄌ", "ㄨ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_04",
+            text: "起床",
+            chars: [
+              { char: "起", bpmf: ["ㄑ", "ㄧ"], tone: "ˇ" },
+              { char: "床", bpmf: ["ㄔ", "ㄨ", "ㄤ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_05",
+            text: "桌子",
+            chars: [
+              { char: "桌", bpmf: ["ㄓ", "ㄨ", "ㄛ"], tone: "" },
+              { char: "子", bpmf: ["ㄗ"], tone: "˙", isLight: true }
+            ]
+          },
+          {
+            id: "L4_06",
+            text: "好玩",
+            chars: [
+              { char: "好", bpmf: ["ㄏ", "ㄠ"], tone: "ˇ" },
+              { char: "玩", bpmf: ["ㄨ", "ㄢ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_07",
+            text: "玩遊戲",
+            chars: [
+              { char: "玩", bpmf: ["ㄨ", "ㄢ"], tone: "ˊ" },
+              { char: "遊", bpmf: ["ㄧ", "ㄡ"], tone: "ˊ" },
+              { char: "戲", bpmf: ["ㄒ", "ㄧ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_08",
+            text: "擁抱",
+            chars: [
+              { char: "擁", bpmf: ["ㄩ", "ㄥ"], tone: "ˇ" },
+              { char: "抱", bpmf: ["ㄅ", "ㄠ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_09",
+            text: "好像",
+            chars: [
+              { char: "好", bpmf: ["ㄏ", "ㄠ"], tone: "ˇ" },
+              { char: "像", bpmf: ["ㄒ", "ㄧ", "ㄤ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_10",
+            text: "好多",
+            chars: [
+              { char: "好", bpmf: ["ㄏ", "ㄠ"], tone: "ˇ" },
+              { char: "多", bpmf: ["ㄉ", "ㄨ", "ㄛ"], tone: "" }
+            ]
+          },
+          {
+            id: "L4_11",
+            text: "吹出",
+            chars: [
+              { char: "吹", bpmf: ["ㄔ", "ㄨ", "ㄟ"], tone: "" },
+              { char: "出", bpmf: ["ㄔ", "ㄨ"], tone: "" }
+            ]
+          },
+          {
+            id: "L4_12",
+            text: "我的",
+            chars: [
+              { char: "我", bpmf: ["ㄨ", "ㄛ"], tone: "ˇ" },
+              { char: "的", bpmf: ["ㄉ", "ㄜ"], tone: "˙", isLight: true }
+            ]
+          },
+          {
+            id: "L4_13",
+            text: "你的",
+            chars: [
+              { char: "你", bpmf: ["ㄋ", "ㄧ"], tone: "ˇ" },
+              { char: "的", bpmf: ["ㄉ", "ㄜ"], tone: "˙", isLight: true }
+            ]
+          },
+          {
+            id: "L4_14",
+            text: "大家",
+            chars: [
+              { char: "大", bpmf: ["ㄉ", "ㄚ"], tone: "ˋ" },
+              { char: "家", bpmf: ["ㄐ", "ㄧ", "ㄚ"], tone: "" }
+            ]
+          },
+          {
+            id: "L4_15",
+            text: "一起",
+            chars: [
+              { char: "一", bpmf: ["ㄧ"], tone: "ˋ" },
+              { char: "起", bpmf: ["ㄑ", "ㄧ"], tone: "ˇ" }
+            ]
+          },
+          {
+            id: "L4_16",
+            text: "跑步",
+            chars: [
+              { char: "跑", bpmf: ["ㄆ", "ㄠ"], tone: "ˇ" },
+              { char: "步", bpmf: ["ㄅ", "ㄨ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_17",
+            text: "踢足球",
+            chars: [
+              { char: "踢", bpmf: ["ㄊ", "ㄧ"], tone: "" },
+              { char: "足", bpmf: ["ㄗ", "ㄨ"], tone: "ˊ" },
+              { char: "球", bpmf: ["ㄑ", "ㄧ", "ㄡ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_18",
+            text: "目的",
+            chars: [
+              { char: "目", bpmf: ["ㄇ", "ㄨ"], tone: "ˋ" },
+              { char: "的", bpmf: ["ㄉ", "ㄧ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_19",
+            text: "好棒",
+            chars: [
+              { char: "好", bpmf: ["ㄏ", "ㄠ"], tone: "ˇ" },
+              { char: "棒", bpmf: ["ㄅ", "ㄤ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L4_20",
+            text: "好奇",
+            chars: [
+              { char: "好", bpmf: ["ㄏ", "ㄠ"], tone: "ˋ" },
+              { char: "奇", bpmf: ["ㄑ", "ㄧ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_21",
+            text: "泡茶",
+            chars: [
+              { char: "泡", bpmf: ["ㄆ", "ㄠ"], tone: "ˋ" },
+              { char: "茶", bpmf: ["ㄔ", "ㄚ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_22",
+            text: "泡溫泉",
+            chars: [
+              { char: "泡", bpmf: ["ㄆ", "ㄠ"], tone: "ˋ" },
+              { char: "溫", bpmf: ["ㄨ", "ㄣ"], tone: "" },
+              { char: "泉", bpmf: ["ㄑ", "ㄩ", "ㄢ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_23",
+            text: "小魚",
+            chars: [
+              { char: "小", bpmf: ["ㄒ", "ㄧ", "ㄠ"], tone: "ˇ" },
+              { char: "魚", bpmf: ["ㄩ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_24",
+            text: "小花",
+            chars: [
+              { char: "小", bpmf: ["ㄒ", "ㄧ", "ㄠ"], tone: "ˇ" },
+              { char: "花", bpmf: ["ㄏ", "ㄨ", "ㄚ"], tone: "" }
+            ]
+          },
+          {
+            id: "L4_25",
+            text: "小船",
+            chars: [
+              { char: "小", bpmf: ["ㄒ", "ㄧ", "ㄠ"], tone: "ˇ" },
+              { char: "船", bpmf: ["ㄔ", "ㄨ", "ㄢ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L4_26",
+            text: "招招手",
+            chars: [
+              { char: "招", bpmf: ["ㄓ", "ㄠ"], tone: "" },
+              { char: "招", bpmf: ["ㄓ", "ㄠ"], tone: "" },
+              { char: "手", bpmf: ["ㄕ", "ㄡ"], tone: "ˇ" }
+            ]
+          },
+          {
+            id: "L4_27",
+            text: "抱抱",
+            chars: [
+              { char: "抱", bpmf: ["ㄅ", "ㄠ"], tone: "ˋ" },
+              { char: "抱", bpmf: ["ㄅ", "ㄠ"], tone: "ˋ" }
+            ]
+          }
+        ]
+      },
+      {
+        id: "L5",
+        name: "L5 開心校園",
+        words: [
+          {
+            id: "L5_01",
+            text: "上學",
+            chars: [
+              { char: "上", bpmf: ["ㄕ", "ㄤ"], tone: "ˋ" },
+              { char: "學", bpmf: ["ㄒ", "ㄩ", "ㄝ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L5_02",
+            text: "老師",
+            chars: [
+              { char: "老", bpmf: ["ㄌ", "ㄠ"], tone: "ˇ" },
+              { char: "師", bpmf: ["ㄕ"], tone: "" }
+            ]
+          },
+          {
+            id: "L5_03",
+            text: "同學",
+            chars: [
+              { char: "同", bpmf: ["ㄊ", "ㄨ", "ㄥ"], tone: "ˊ" },
+              { char: "學", bpmf: ["ㄒ", "ㄩ", "ㄝ"], tone: "ˊ" }
+            ]
+          },
+          {
+            id: "L5_04",
+            text: "書包",
+            chars: [
+              { char: "書", bpmf: ["ㄕ", "ㄨ"], tone: "" },
+              { char: "包", bpmf: ["ㄅ", "ㄠ"], tone: "" }
+            ]
+          },
+          {
+            id: "L5_05",
+            text: "操場",
+            chars: [
+              { char: "操", bpmf: ["ㄘ", "ㄠ"], tone: "" },
+              { char: "場", bpmf: ["ㄔ", "ㄤ"], tone: "ˇ" }
+            ]
+          },
+          {
+            id: "L5_06",
+            text: "教室",
+            chars: [
+              { char: "教", bpmf: ["ㄐ", "ㄧ", "ㄠ"], tone: "ˋ" },
+              { char: "室", bpmf: ["ㄕ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L5_07",
+            text: "讀書",
+            chars: [
+              { char: "讀", bpmf: ["ㄉ", "ㄨ"], tone: "ˊ" },
+              { char: "書", bpmf: ["ㄕ", "ㄨ"], tone: "" }
+            ]
+          },
+          {
+            id: "L5_08",
+            text: "寫字",
+            chars: [
+              { char: "寫", bpmf: ["ㄒ", "ㄧ", "ㄝ"], tone: "ˇ" },
+              { char: "字", bpmf: ["ㄗ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L5_09",
+            text: "唱歌",
+            chars: [
+              { char: "唱", bpmf: ["ㄔ", "ㄤ"], tone: "ˋ" },
+              { char: "歌", bpmf: ["ㄍ", "ㄜ"], tone: "" }
+            ]
+          },
+          {
+            id: "L5_10",
+            text: "畫畫",
+            chars: [
+              { char: "畫", bpmf: ["ㄏ", "ㄨ", "ㄚ"], tone: "ˋ" },
+              { char: "畫", bpmf: ["ㄏ", "ㄨ", "ㄚ"], tone: "ˋ" }
+            ]
+          },
+          {
+            id: "L5_11",
+            text: "開心",
+            chars: [
+              { char: "開", bpmf: ["ㄎ", "ㄞ"], tone: "" },
+              { char: "心", bpmf: ["ㄒ", "ㄧ", "ㄣ"], tone: "" }
+            ]
+          },
+          {
+            id: "L5_12",
+            text: "拍手",
+            chars: [
+              { char: "拍", bpmf: ["ㄆ", "ㄞ"], tone: "" },
+              { char: "手", bpmf: ["ㄕ", "ㄡ"], tone: "ˇ" }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // 內建 6 種泡泡虹彩與天空漸層配色輪動
+    const BUBBLE_THEMES = [
+      {
+        name: "彩虹晨光",
+        dotColor: "#ec4899",
+        badgeBg: "#fdf2f8",
+        badgeText: "#be185d",
+        bubbleGradient: "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.25) 25%, rgba(175, 235, 255, 0.35) 50%, rgba(255, 185, 235, 0.4) 75%, rgba(195, 245, 215, 0.45) 100%)",
+        shadow: "inset 0 0 25px rgba(255, 255, 255, 0.85), inset 10px 10px 25px rgba(255, 160, 230, 0.45), inset -10px -10px 25px rgba(110, 220, 255, 0.5), 0 12px 32px -6px rgba(100, 150, 230, 0.3)",
+        border: "rgba(255, 255, 255, 0.85)",
+        pageGradient: "linear-gradient(180deg, #bbf2f6 0%, #d8e8fc 40%, #fedfe8 85%, #fce7f3 100%)"
+      },
+      {
+        name: "粉漾櫻花",
+        dotColor: "#f43f5e",
+        badgeBg: "#fff1f2",
+        badgeText: "#e11d48",
+        bubbleGradient: "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 230, 240, 0.3) 25%, rgba(255, 180, 210, 0.4) 55%, rgba(254, 205, 211, 0.5) 80%, rgba(253, 164, 175, 0.5) 100%)",
+        shadow: "inset 0 0 25px rgba(255, 255, 255, 0.9), inset 10px 10px 25px rgba(255, 150, 180, 0.5), inset -10px -10px 25px rgba(254, 205, 211, 0.55), 0 12px 32px -6px rgba(244, 63, 94, 0.28)",
+        border: "rgba(255, 255, 255, 0.9)",
+        pageGradient: "linear-gradient(180deg, #ffe4e6 0%, #fed7aa 40%, #fecdd3 80%, #fda4af 100%)"
+      },
+      {
+        name: "碧海幻藍",
+        dotColor: "#0284c7",
+        badgeBg: "#f0f9ff",
+        badgeText: "#0369a1",
+        bubbleGradient: "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(224, 242, 254, 0.3) 25%, rgba(125, 211, 252, 0.4) 55%, rgba(56, 189, 248, 0.45) 80%, rgba(186, 230, 253, 0.5) 100%)",
+        shadow: "inset 0 0 25px rgba(255, 255, 255, 0.9), inset 10px 10px 25px rgba(56, 189, 248, 0.45), inset -10px -10px 25px rgba(14, 165, 233, 0.4), 0 12px 32px -6px rgba(2, 132, 199, 0.28)",
+        border: "rgba(255, 255, 255, 0.9)",
+        pageGradient: "linear-gradient(180deg, #bae6fd 0%, #e0f2fe 45%, #c7d2fe 80%, #ddd6fe 100%)"
+      },
+      {
+        name: "薰衣紫霞",
+        dotColor: "#8b5cf6",
+        badgeBg: "#f5f3ff",
+        badgeText: "#6d28d9",
+        bubbleGradient: "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(243, 232, 255, 0.3) 25%, rgba(216, 180, 254, 0.4) 55%, rgba(192, 132, 252, 0.45) 80%, rgba(233, 213, 255, 0.5) 100%)",
+        shadow: "inset 0 0 25px rgba(255, 255, 255, 0.9), inset 10px 10px 25px rgba(192, 132, 252, 0.5), inset -10px -10px 25px rgba(147, 51, 234, 0.35), 0 12px 32px -6px rgba(139, 92, 246, 0.28)",
+        border: "rgba(255, 255, 255, 0.9)",
+        pageGradient: "linear-gradient(180deg, #ede9fe 0%, #f3e8ff 45%, #fce7f3 80%, #fbcfe8 100%)"
+      },
+      {
+        name: "陽光橙橘",
+        dotColor: "#f59e0b",
+        badgeBg: "#fffbeb",
+        badgeText: "#b45309",
+        bubbleGradient: "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(254, 243, 199, 0.3) 25%, rgba(253, 230, 138, 0.4) 55%, rgba(251, 191, 36, 0.4) 80%, rgba(254, 215, 170, 0.5) 100%)",
+        shadow: "inset 0 0 25px rgba(255, 255, 255, 0.9), inset 10px 10px 25px rgba(251, 191, 36, 0.45), inset -10px -10px 25px rgba(245, 158, 11, 0.4), 0 12px 32px -6px rgba(217, 119, 6, 0.28)",
+        border: "rgba(255, 255, 255, 0.9)",
+        pageGradient: "linear-gradient(180deg, #fef3c7 0%, #ffedd5 45%, #fed7aa 80%, #fecdd3 100%)"
+      },
+      {
+        name: "薄荷青蘋",
+        dotColor: "#10b981",
+        badgeBg: "#ecfdf5",
+        badgeText: "#047857",
+        bubbleGradient: "radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.85) 0%, rgba(209, 250, 229, 0.3) 25%, rgba(167, 243, 208, 0.4) 55%, rgba(110, 231, 183, 0.45) 80%, rgba(167, 243, 208, 0.5) 100%)",
+        shadow: "inset 0 0 25px rgba(255, 255, 255, 0.9), inset 10px 10px 25px rgba(52, 211, 153, 0.45), inset -10px -10px 25px rgba(16, 185, 129, 0.4), 0 12px 32px -6px rgba(5, 150, 105, 0.28)",
+        border: "rgba(255, 255, 255, 0.9)",
+        pageGradient: "linear-gradient(180deg, #d1fae5 0%, #ecfdf5 45%, #e0f2fe 80%, #bae6fd 100%)"
+      }
+    ];
+
+    // 完整的生詞彩色生動 SVG 插畫資料庫，確保 100% 離線可用、清晰美觀無死圖
+    const WORD_ILLUSTRATIONS = {
+      "吹泡泡": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#e0f2fe"/>
+        <circle cx="34" cy="40" r="18" fill="rgba(186,230,253,0.6)" stroke="#38bdf8" stroke-width="2.5"/>
+        <circle cx="28" cy="34" r="5" fill="#ffffff"/>
+        <circle cx="68" cy="35" r="14" fill="rgba(251,207,232,0.65)" stroke="#f472b6" stroke-width="2.5"/>
+        <circle cx="64" cy="30" r="4" fill="#ffffff"/>
+        <circle cx="56" cy="68" r="19" fill="rgba(254,240,138,0.6)" stroke="#facc15" stroke-width="2.5"/>
+        <circle cx="50" cy="62" r="5" fill="#ffffff"/>
+        <path d="M18 78 L32 60" stroke="#f97316" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="34" cy="58" r="7" fill="none" stroke="#f97316" stroke-width="3"/>
+      </svg>`,
+      "燈泡": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef3c7"/>
+        <path d="M50 18 L50 8 M28 26 L22 18 M72 26 L78 18 M16 46 L8 46 M84 46 L92 46" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M35 48 C35 34 65 34 65 48 C65 56 59 60 59 68 L41 68 C41 60 35 56 35 48 Z" fill="#fbbf24" stroke="#d97706" stroke-width="3"/>
+        <path d="M42 68 L58 68 L56 78 L44 78 Z" fill="#94a3b8" stroke="#64748b" stroke-width="2"/>
+        <path d="M46 78 L54 78 L52 83 L48 83 Z" fill="#64748b"/>
+        <circle cx="43" cy="42" r="4" fill="#ffffff"/>
+      </svg>`,
+      "走路": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#dcfce7"/>
+        <path d="M12 78 Q50 68 88 78" stroke="#86efac" stroke-width="6" fill="none"/>
+        <circle cx="50" cy="24" r="10" fill="#f97316"/>
+        <path d="M50 34 L50 54 L36 74 M50 54 L62 74" stroke="#1e293b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M36 44 L50 40 L64 48" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"/>
+        <circle cx="34" cy="76" r="4" fill="#ef4444"/>
+        <circle cx="64" cy="76" r="4" fill="#ef4444"/>
+      </svg>`,
+      "起床": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ffedd5"/>
+        <circle cx="50" cy="52" r="26" fill="#ffffff" stroke="#ea580c" stroke-width="4"/>
+        <circle cx="50" cy="52" r="3" fill="#ea580c"/>
+        <path d="M50 52 L50 36 M50 52 L64 52" stroke="#ea580c" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M30 26 L22 34 M70 26 L78 34" stroke="#ea580c" stroke-width="5" stroke-linecap="round"/>
+        <path d="M32 76 L24 84 M68 76 L76 84" stroke="#9a3412" stroke-width="4" stroke-linecap="round"/>
+      </svg>`,
+      "桌子": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fed7aa"/>
+        <rect x="20" y="42" width="60" height="12" rx="4" fill="#b45309" stroke="#78350f" stroke-width="2"/>
+        <rect x="26" y="54" width="7" height="28" rx="2" fill="#d97706"/>
+        <rect x="67" y="54" width="7" height="28" rx="2" fill="#d97706"/>
+        <rect x="36" y="32" width="16" height="10" rx="1" fill="#38bdf8"/>
+        <rect x="40" y="28" width="8" height="4" rx="1" fill="#f43f5e"/>
+      </svg>`,
+      "好玩": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fdf4ff"/>
+        <circle cx="50" cy="46" r="28" fill="none" stroke="#d946ef" stroke-width="4" stroke-dasharray="8 6"/>
+        <circle cx="50" cy="46" r="7" fill="#ec4899"/>
+        <path d="M50 53 L38 82 M50 53 L62 82 M34 82 L66 82" stroke="#a21caf" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="50" cy="18" r="5" fill="#06b6d4"/>
+        <circle cx="78" cy="46" r="5" fill="#f59e0b"/>
+        <circle cx="22" cy="46" r="5" fill="#10b981"/>
+      </svg>`,
+      "玩遊戲": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ede9fe"/>
+        <rect x="20" y="35" width="60" height="34" rx="16" fill="#8b5cf6" stroke="#6d28d9" stroke-width="3"/>
+        <path d="M32 46 L32 58 M26 52 L38 52" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="62" cy="52" r="3.5" fill="#f43f5e"/>
+        <circle cx="70" cy="45" r="3.5" fill="#3b82f6"/>
+        <circle cx="70" cy="59" r="3.5" fill="#eab308"/>
+      </svg>`,
+      "擁抱": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ffe4e6"/>
+        <circle cx="38" cy="42" r="14" fill="#fb7185"/>
+        <circle cx="62" cy="42" r="14" fill="#f43f5e"/>
+        <path d="M38 46 Q50 66 62 46 Q50 76 38 46" fill="#e11d48"/>
+        <path d="M50 20 Q56 12 62 20 Q50 34 50 34 Q50 34 38 20 Q44 12 50 20 Z" fill="#f43f5e"/>
+        <circle cx="34" cy="40" r="2" fill="#ffffff"/>
+        <circle cx="66" cy="40" r="2" fill="#ffffff"/>
+      </svg>`,
+      "好像": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#e0e7ff"/>
+        <rect x="30" y="24" width="40" height="52" rx="18" fill="#ffffff" stroke="#6366f1" stroke-width="3.5"/>
+        <ellipse cx="50" cy="50" rx="14" ry="20" fill="#c7d2fe"/>
+        <path d="M44 46 L56 46 M46 42 L54 42" stroke="#4338ca" stroke-width="2"/>
+        <circle cx="68" cy="30" r="3" fill="#f59e0b"/>
+      </svg>`,
+      "好多": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef08a"/>
+        <circle cx="32" cy="36" r="11" fill="#ef4444"/>
+        <circle cx="52" cy="30" r="11" fill="#f97316"/>
+        <circle cx="68" cy="38" r="11" fill="#ef4444"/>
+        <circle cx="40" cy="54" r="11" fill="#eab308"/>
+        <circle cx="60" cy="52" r="11" fill="#ef4444"/>
+        <circle cx="50" cy="70" r="11" fill="#f97316"/>
+        <circle cx="30" cy="33" r="3" fill="#ffffff"/>
+        <circle cx="50" cy="27" r="3" fill="#ffffff"/>
+        <circle cx="66" cy="35" r="3" fill="#ffffff"/>
+      </svg>`,
+      "吹出": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#e0f2fe"/>
+        <circle cx="32" cy="50" r="16" fill="#38bdf8"/>
+        <path d="M48 48 C60 42 70 38 84 38 M48 52 C65 52 75 58 88 56 M48 56 C58 64 68 68 80 66" stroke="#0284c7" stroke-width="4" stroke-linecap="round" fill="none"/>
+        <circle cx="82" cy="38" r="3" fill="#38bdf8"/>
+        <circle cx="86" cy="56" r="3.5" fill="#38bdf8"/>
+      </svg>`,
+      "我的": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fbcfe8"/>
+        <circle cx="50" cy="32" r="14" fill="#ec4899"/>
+        <path d="M30 76 C30 54 70 54 70 76 Z" fill="#db2777"/>
+        <circle cx="50" cy="62" r="6" fill="#fde047"/>
+        <path d="M24 58 L36 50 M76 58 L64 50" stroke="#db2777" stroke-width="4" stroke-linecap="round"/>
+      </svg>`,
+      "你的": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#bae6fd"/>
+        <path d="M22 52 L54 52 L54 44 L76 56 L54 68 L54 60 L22 60 Z" fill="#0284c7" stroke="#0369a1" stroke-width="2"/>
+        <circle cx="78" cy="56" r="4" fill="#facc15"/>
+      </svg>`,
+      "大家": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#dcfce7"/>
+        <circle cx="28" cy="36" r="10" fill="#f43f5e"/>
+        <circle cx="50" cy="30" r="11" fill="#3b82f6"/>
+        <circle cx="72" cy="36" r="10" fill="#eab308"/>
+        <path d="M16 70 C16 52 40 52 40 70 Z" fill="#f43f5e"/>
+        <path d="M36 70 C36 48 64 48 64 70 Z" fill="#3b82f6"/>
+        <path d="M60 70 C60 52 84 52 84 70 Z" fill="#eab308"/>
+      </svg>`,
+      "一起": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef3c7"/>
+        <path d="M24 50 Q36 34 50 50 Q64 66 76 50" stroke="#f59e0b" stroke-width="7" fill="none" stroke-linecap="round"/>
+        <circle cx="24" cy="50" r="9" fill="#ef4444"/>
+        <circle cx="76" cy="50" r="9" fill="#3b82f6"/>
+        <circle cx="50" cy="50" r="6" fill="#10b981"/>
+      </svg>`,
+      "跑步": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fee2e2"/>
+        <circle cx="62" cy="24" r="9" fill="#dc2626"/>
+        <path d="M56 34 L46 48 L56 56 L42 76" stroke="#991b1b" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M46 48 L64 44 L72 58" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M18 78 L78 78" stroke="#f87171" stroke-width="4" stroke-dasharray="6 4"/>
+      </svg>`,
+      "踢足球": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#f1f5f9"/>
+        <circle cx="50" cy="50" r="25" fill="#ffffff" stroke="#0f172a" stroke-width="3"/>
+        <polygon points="50,38 60,45 56,57 44,57 40,45" fill="#0f172a"/>
+        <path d="M50 38 L50 25 M60 45 L73 43 M56 57 L66 69 M44 57 L34 69 M40 45 L27 43" stroke="#0f172a" stroke-width="2.5"/>
+        <path d="M16 68 Q28 62 36 68" stroke="#3b82f6" stroke-width="4" stroke-linecap="round"/>
+      </svg>`,
+      "目的": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fee2e2"/>
+        <circle cx="50" cy="50" r="32" fill="#ef4444"/>
+        <circle cx="50" cy="50" r="23" fill="#ffffff"/>
+        <circle cx="50" cy="50" r="14" fill="#ef4444"/>
+        <circle cx="50" cy="50" r="6" fill="#facc15"/>
+        <path d="M22 22 L46 46" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="46,46 38,44 44,38" fill="#1e293b"/>
+      </svg>`,
+      "好棒": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef9c3"/>
+        <path d="M38 72 L38 48 L48 30 Q54 28 56 36 L52 48 L70 48 Q76 48 76 54 Q76 60 72 62 Q76 64 74 70 Q70 74 64 74 Z" fill="#eab308" stroke="#ca8a04" stroke-width="3"/>
+        <rect x="24" y="48" width="14" height="24" rx="3" fill="#3b82f6"/>
+        <path d="M78 28 L84 22 M80 40 L88 40 M24 24 L18 18" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+      </svg>`,
+      "好奇": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#e0f2fe"/>
+        <circle cx="44" cy="44" r="22" fill="#ffffff" stroke="#0284c7" stroke-width="5"/>
+        <circle cx="44" cy="44" r="16" fill="#bae6fd"/>
+        <path d="M59 59 L80 80" stroke="#0369a1" stroke-width="8" stroke-linecap="round"/>
+        <text x="44" y="52" font-size="20" font-weight="bold" fill="#0369a1" text-anchor="middle">?</text>
+      </svg>`,
+      "泡茶": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#dcfce7"/>
+        <path d="M30 52 C30 70 70 70 70 52 Z" fill="#15803d" stroke="#166534" stroke-width="3"/>
+        <path d="M22 52 L78 52" stroke="#166534" stroke-width="3" stroke-linecap="round"/>
+        <path d="M42 38 Q46 28 42 22 M52 38 Q56 28 52 22 M62 38 Q66 28 62 22" stroke="#86efac" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M70 56 Q82 58 78 68 Q72 70 66 66" stroke="#166534" stroke-width="3" fill="none"/>
+      </svg>`,
+      "泡溫泉": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fee2e2"/>
+        <ellipse cx="50" cy="66" rx="34" ry="16" fill="#38bdf8" stroke="#0284c7" stroke-width="3"/>
+        <path d="M50 48 Q54 36 50 28 M38 48 Q42 36 38 30 M62 48 Q66 36 62 30" stroke="#ef4444" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+        <circle cx="50" cy="66" r="6" fill="#ffffff" opacity="0.6"/>
+      </svg>`,
+      "小魚": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#e0f2fe"/>
+        <path d="M72 50 C54 34 32 42 22 50 C32 58 54 66 72 50 Z" fill="#f97316" stroke="#ea580c" stroke-width="3"/>
+        <polygon points="70,50 86,34 86,66" fill="#f97316" stroke="#ea580c" stroke-width="2"/>
+        <circle cx="34" cy="48" r="3" fill="#ffffff"/>
+        <circle cx="33" cy="48" r="1.5" fill="#000000"/>
+        <circle cx="18" cy="36" r="3.5" fill="#7dd3fc"/>
+        <circle cx="14" cy="24" r="2.5" fill="#7dd3fc"/>
+      </svg>`,
+      "小花": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fce7f3"/>
+        <circle cx="50" cy="34" r="12" fill="#f43f5e"/>
+        <circle cx="66" cy="50" r="12" fill="#f43f5e"/>
+        <circle cx="50" cy="66" r="12" fill="#f43f5e"/>
+        <circle cx="34" cy="50" r="12" fill="#f43f5e"/>
+        <circle cx="50" cy="50" r="13" fill="#fde047" stroke="#ca8a04" stroke-width="2"/>
+        <circle cx="46" cy="48" r="2" fill="#713f12"/>
+        <circle cx="54" cy="48" r="2" fill="#713f12"/>
+      </svg>`,
+      "小船": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#cffafe"/>
+        <path d="M22 64 L78 64 L70 80 L30 80 Z" fill="#0284c7" stroke="#0369a1" stroke-width="3"/>
+        <path d="M50 24 L50 64" stroke="#78350f" stroke-width="3"/>
+        <polygon points="50,26 72,56 50,56" fill="#f43f5e"/>
+        <polygon points="48,32 30,56 48,56" fill="#ffffff"/>
+        <path d="M12 84 Q30 78 50 84 Q70 90 88 84" stroke="#38bdf8" stroke-width="4" fill="none"/>
+      </svg>`,
+      "招招手": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef3c7"/>
+        <path d="M38 72 L38 52 Q38 46 44 46 Q50 46 50 52 L50 42 Q50 36 56 36 Q62 36 62 42 L62 40 Q62 34 68 34 Q74 34 74 42 L74 62 Q74 74 60 76 Z" fill="#f59e0b" stroke="#d97706" stroke-width="2.5"/>
+        <path d="M24 38 Q32 32 30 22 M20 50 Q28 46 26 38" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" fill="none"/>
+      </svg>`,
+      "抱抱": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ffe4e6"/>
+        <circle cx="50" cy="46" r="22" fill="#b45309"/>
+        <circle cx="34" cy="28" r="8" fill="#92400e"/>
+        <circle cx="66" cy="28" r="8" fill="#92400e"/>
+        <ellipse cx="50" cy="52" rx="10" ry="7" fill="#fde68a"/>
+        <circle cx="50" cy="49" r="3" fill="#451a03"/>
+        <circle cx="43" cy="42" r="2" fill="#451a03"/>
+        <circle cx="57" cy="42" r="2" fill="#451a03"/>
+        <path d="M26 62 Q50 78 74 62" stroke="#b45309" stroke-width="7" stroke-linecap="round" fill="none"/>
+      </svg>`,
+      "上學": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#dbeafe"/>
+        <polygon points="50,22 22,42 78,42" fill="#ef4444"/>
+        <rect x="28" y="42" width="44" height="34" fill="#fef08a" stroke="#ca8a04" stroke-width="2"/>
+        <rect x="44" y="56" width="12" height="20" fill="#92400e"/>
+        <circle cx="50" cy="34" r="4" fill="#ffffff"/>
+      </svg>`,
+      "老師": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fce7f3"/>
+        <circle cx="50" cy="34" r="14" fill="#f472b6"/>
+        <path d="M30 76 C30 56 70 56 70 76 Z" fill="#8b5cf6"/>
+        <rect x="54" y="60" width="16" height="18" rx="2" fill="#38bdf8"/>
+        <circle cx="46" cy="34" r="2" fill="#ffffff"/>
+        <circle cx="54" cy="34" r="2" fill="#ffffff"/>
+      </svg>`,
+      "同學": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ede9fe"/>
+        <circle cx="36" cy="38" r="11" fill="#3b82f6"/>
+        <circle cx="64" cy="38" r="11" fill="#ec4899"/>
+        <path d="M24 74 C24 56 48 56 48 74 Z" fill="#2563eb"/>
+        <path d="M52 74 C52 56 76 56 76 74 Z" fill="#db2777"/>
+      </svg>`,
+      "書包": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef3c7"/>
+        <rect x="28" y="34" width="44" height="44" rx="8" fill="#f97316" stroke="#c2410c" stroke-width="3"/>
+        <rect x="36" y="48" width="28" height="20" rx="4" fill="#fbbf24"/>
+        <path d="M38 34 L38 24 Q50 20 62 24 L62 34" stroke="#c2410c" stroke-width="4" fill="none"/>
+      </svg>`,
+      "操場": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fee2e2"/>
+        <rect x="22" y="32" width="56" height="36" rx="18" fill="#ef4444" stroke="#b91c1c" stroke-width="3"/>
+        <rect x="32" y="40" width="36" height="20" rx="10" fill="#22c55e"/>
+      </svg>`,
+      "教室": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#f1f5f9"/>
+        <rect x="22" y="28" width="56" height="36" rx="3" fill="#15803d" stroke="#78350f" stroke-width="4"/>
+        <text x="50" y="50" font-size="12" font-weight="bold" fill="#ffffff" text-anchor="middle">1 + 2 = 3</text>
+      </svg>`,
+      "讀書": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef9c3"/>
+        <path d="M50 36 C42 32 30 32 20 36 L20 68 C30 64 42 64 50 68 C58 64 70 64 80 68 L80 36 C70 32 58 32 50 36 Z" fill="#3b82f6" stroke="#1d4ed8" stroke-width="3"/>
+        <path d="M50 36 L50 68" stroke="#1d4ed8" stroke-width="3"/>
+      </svg>`,
+      "寫字": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#f3e8ff"/>
+        <rect x="24" y="26" width="38" height="50" rx="2" fill="#ffffff" stroke="#9333ea" stroke-width="2"/>
+        <path d="M30 38 L54 38 M30 48 L54 48 M30 58 L46 58" stroke="#cbd5e1" stroke-width="2"/>
+        <path d="M48 68 L72 32 L78 38 L54 74 Z" fill="#eab308" stroke="#a16207" stroke-width="2"/>
+        <polygon points="48,68 44,76 54,74" fill="#1e293b"/>
+      </svg>`,
+      "唱歌": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fce7f3"/>
+        <rect x="42" y="30" width="16" height="26" rx="8" fill="#64748b" stroke="#334155" stroke-width="2"/>
+        <path d="M50 56 L50 78 M40 78 L60 78" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+        <path d="M68 32 Q72 26 78 30 M74 44 Q80 38 86 42" stroke="#ec4899" stroke-width="3" fill="none"/>
+      </svg>`,
+      "畫畫": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fdf2f8"/>
+        <path d="M30 68 C16 48 40 24 64 28 C80 30 84 54 72 68 C64 76 40 78 30 68 Z" fill="#fcd34d" stroke="#d97706" stroke-width="3"/>
+        <circle cx="40" cy="38" r="4" fill="#ef4444"/>
+        <circle cx="56" cy="36" r="4" fill="#3b82f6"/>
+        <circle cx="68" cy="48" r="4" fill="#10b981"/>
+        <path d="M26 78 L56 48" stroke="#78350f" stroke-width="4" stroke-linecap="round"/>
+      </svg>`,
+      "開心": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#fef08a"/>
+        <circle cx="50" cy="50" r="32" fill="#fbbf24" stroke="#d97706" stroke-width="3"/>
+        <path d="M38 42 Q42 36 46 42 M54 42 Q58 36 62 42" stroke="#78350f" stroke-width="3" stroke-linecap="round" fill="none"/>
+        <path d="M38 56 Q50 70 62 56 Z" fill="#dc2626"/>
+      </svg>`,
+      "拍手": `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ffedd5"/>
+        <path d="M36 56 L46 38 Q52 34 56 42 L48 62" stroke="#ea580c" stroke-width="4" stroke-linecap="round" fill="#fdba74"/>
+        <path d="M64 56 L54 38 Q48 34 44 42 L52 62" stroke="#ea580c" stroke-width="4" stroke-linecap="round" fill="#fdba74"/>
+        <path d="M50 22 L50 14 M34 26 L28 20 M66 26 L72 20" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+      </svg>`
+    };
+
+    function getWordImageSVG(wordText) {
+      if (WORD_ILLUSTRATIONS[wordText]) {
+        return WORD_ILLUSTRATIONS[wordText];
+      }
+      // 自訂新增詞彙的通用精緻圖示
+      return `<svg viewBox="0 0 100 100" class="w-full h-full">
+        <circle cx="50" cy="50" r="46" fill="#ede9fe"/>
+        <circle cx="50" cy="50" r="34" fill="#a855f7" opacity="0.2"/>
+        <text x="50" y="58" font-size="28" font-weight="900" fill="#7e22ce" text-anchor="middle">${wordText.slice(0, 2)}</text>
+      </svg>`;
+    }
+
+    const STORAGE_KEY = 'bubble_lesson_db_v3';
+    let LESSON_DB = loadLessons();
+    let currentLessonId = "L4";
+    let currentRoundWords = []; // Selected 10 words for this round
+    let roundPoppedIds = new Set();
+    let roundIndex = 0;
+    let currentThemeIndex = 0;
+    let speedFactor = 1.0; // 0.5: 慢, 1.0: 中, 1.8: 快
+    let editingWordId = null;
+
+    // 目標生詞任務與得分狀態
+    let currentTargetWord = null;
+    let gameScore = 0;
+    let isHintWordVisible = false;
+
+    function loadLessons() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            return parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Using default lessons:", e);
+      }
+      return JSON.parse(JSON.stringify(DEFAULT_LESSONS));
+    }
+
+    function saveLessons() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(LESSON_DB));
+      } catch (e) {
+        console.error("Failed to save lessons:", e);
+      }
+    }
+
+    function getCurrentLesson() {
+      return LESSON_DB.find(l => l.id === currentLessonId) || LESSON_DB[0];
+    }
+
+    let audioCtx = null;
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playPopSound() {
+      try {
+        initAudio();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        // Organic bubble popping burst frequency curve
+        const startFreq = 680 + Math.random() * 320;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(startFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.085);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.09);
+      } catch (e) {
+        console.error("Pop audio error:", e);
+      }
+    }
+
+    // 答對得一分的歡樂「叮咚！」獎勵音效
+    function playScoreSound() {
+      try {
+        initAudio();
+        if (!audioCtx) return;
+
+        const now = audioCtx.currentTime;
+        const notes = [587.33, 880]; // D5, A5 雙音和弦獎勵音
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+
+          gain.gain.setValueAtTime(0, now + idx * 0.08);
+          gain.gain.linearRampToValueAtTime(0.3, now + idx * 0.08 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.35);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.38);
+        });
+      } catch (e) {
+        console.error("Score sound error:", e);
+      }
+    }
+
+    let isVoiceEnabled = true;
+    function speakWord(text) {
+      if (!isVoiceEnabled || !('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'zh-TW';
+      utterance.rate = 0.88;
+      utterance.pitch = 1.08;
+
+      const voices = window.speechSynthesis.getVoices();
+      const twVoice = voices.find(v => v.lang === 'zh-TW' || v.name.includes('Taiwan') || v.name.includes('Mei-Jia') || v.name.includes('國語'));
+      if (twVoice) {
+        utterance.voice = twVoice;
+      }
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function getBubbleScale(charCount) {
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        if (charCount >= 4) return 0.62;
+        if (charCount === 3) return 0.74;
+        return 0.92;
+      } else {
+        if (charCount >= 4) return 0.74;
+        if (charCount === 3) return 0.86;
+        return 1.05;
+      }
+    }
+
+    function getBubbleRadius(charCount) {
+      const isMobile = window.innerWidth < 640;
+      if (isMobile) {
+        if (charCount >= 4) return 116;
+        if (charCount === 3) return 104;
+        return 86;
+      } else {
+        if (charCount >= 4) return 142;
+        if (charCount === 3) return 128;
+        return 108;
+      }
+    }
+
+    function createZhuyinWordHTML(wordObj, scale = 1, origin = 'center') {
+      const charElements = wordObj.chars.map(c => {
+        const bpmfLen = c.bpmf.length;
+        const hasTone = c.tone && c.tone.trim() !== '';
+        const isLight = c.isLight || c.tone === '˙';
+
+        let lightToneHTML = '';
+        if (isLight) {
+          lightToneHTML = `<span class="tone-mark tone-light">˙</span>`;
+        }
+
+        const bpmfSpans = c.bpmf.map((b, idx) => {
+          let toneHTML = '';
+          if (hasTone && !isLight) {
+            let shouldAttachTone = false;
+            let toneClass = '';
+
+            if (bpmfLen === 1 && idx === 0) {
+              // 1 個注音符號時，標在符號右側正中央
+              shouldAttachTone = true;
+              toneClass = 'tone-beside-char';
+            } else if (bpmfLen === 2 && idx === 1) {
+              // 只有聲母跟韻母（2 個符號）時，聲調符號在兩者中間（交界切線處）
+              shouldAttachTone = true;
+              toneClass = 'tone-between-chars';
+            } else if (bpmfLen >= 3 && idx === 1) {
+              // 有介音（3 個符號）時，聲調標在介音（第 2 個符號）右側正中
+              shouldAttachTone = true;
+              toneClass = 'tone-beside-char';
+            }
+
+            if (shouldAttachTone) {
+              toneHTML = `<span class="tone-mark ${toneClass}">${c.tone}</span>`;
+            }
+          }
+
+          return `<span class="bpmf-letter">${b}${toneHTML}</span>`;
+        }).join('');
+
+        return `
+          <div class="char-box">
+            <span class="chinese-char">${c.char}</span>
+            <div class="zhuyin-col">
+              <div class="zhuyin-letters">
+                ${lightToneHTML}
+                ${bpmfSpans}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `<div class="word-container" style="transform: scale(${scale}); transform-origin: ${origin};">${charElements}</div>`;
+    }
+
+    const activeBubbles = [];
+    const playground = document.getElementById('bubblePlayground');
+    let animationFrameId = null;
+
+    class Bubble {
+      constructor(vocab, x, y) {
+        this.vocab = vocab;
+        const charCount = vocab.chars.length;
+        this.radius = getBubbleRadius(charCount);
+        this.diameter = this.radius * 2;
+
+        const bounds = playground.getBoundingClientRect();
+        this.x = x !== undefined ? x : Math.random() * (bounds.width - this.diameter) + this.radius;
+        this.y = y !== undefined ? y : Math.random() * (bounds.height - this.diameter) + this.radius;
+
+        // Base velocity multiplied by active speed setting
+        const baseSpeedX = (Math.random() - 0.5) * 1.5;
+        const baseSpeedY = -(0.55 + Math.random() * 0.95);
+        this.vx = baseSpeedX * speedFactor;
+        this.vy = baseSpeedY * speedFactor;
+
+        this.element = document.createElement('div');
+        this.element.className = 'soap-bubble';
+        this.element.style.width = `${this.diameter}px`;
+        this.element.style.height = `${this.diameter}px`;
+
+        const scaleFactor = getBubbleScale(charCount);
+        this.element.innerHTML = createZhuyinWordHTML(this.vocab, scaleFactor);
+
+        this.element.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          this.pop(e.clientX, e.clientY);
+        });
+
+        playground.appendChild(this.element);
+      }
+
+      update(width, height) {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Subtle gentle turbulence
+        this.vx += (Math.random() - 0.5) * 0.08 * speedFactor;
+        const maxVx = 2.4 * speedFactor;
+        this.vx = Math.max(-maxVx, Math.min(maxVx, this.vx));
+
+        // Horizontal bounce off walls
+        if (this.x - this.radius < 5) {
+          this.x = this.radius + 5;
+          this.vx = Math.abs(this.vx) * 0.85;
+        } else if (this.x + this.radius > width - 5) {
+          this.x = width - this.radius - 5;
+          this.vx = -Math.abs(this.vx) * 0.85;
+        }
+
+        // Float through ceiling and respawn at bottom
+        if (this.y + this.radius < -25) {
+          this.y = height + this.radius + 15;
+          this.x = Math.random() * (width - this.diameter) + this.radius;
+          this.vy = -(0.55 + Math.random() * 0.95) * speedFactor;
+        }
+
+        this.element.style.transform = `translate(${this.x - this.radius}px, ${this.y - this.radius}px)`;
+      }
+
+      pop(clientX, clientY) {
+        playPopSound();
+        speakWord(this.vocab.text);
+        handleWordPopped(this.vocab);
+
+        const rect = this.element.getBoundingClientRect();
+        const centerX = clientX || (rect.left + rect.width / 2);
+        const centerY = clientY || (rect.top + rect.height / 2);
+        createPopBurst(centerX, centerY);
+
+        if (this.element && this.element.parentNode) {
+          this.element.remove();
+        }
+
+        const index = activeBubbles.indexOf(this);
+        if (index > -1) {
+          activeBubbles.splice(index, 1);
+        }
+
+        // Keep playground comfortably populated with enlarged bubbles
+        setTimeout(() => {
+          if (activeBubbles.length < 9) {
+            spawnSingleBubble();
+          }
+        }, 700);
+      }
+    }
+
+    function showScoreFloat(x, y, text = "+1 ⭐") {
+      const el = document.createElement('div');
+      el.className = 'score-float';
+      el.textContent = text;
+      el.style.left = `${x}px`;
+      el.style.top = `${y}px`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 900);
+    }
+
+    function createPopBurst(x, y) {
+      const colors = ['#f472b6', '#38bdf8', '#fbbf24', '#a855f7', '#34d399', '#ffffff'];
+      const count = 16;
+
+      for (let i = 0; i < count; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'pop-particle';
+        const size = 5 + Math.random() * 8;
+        particle.style.width = `${size}px`;
+        particle.style.height = `${size}px`;
+        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        particle.style.left = `${x}px`;
+        particle.style.top = `${y}px`;
+
+        const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5);
+        const distance = 42 + Math.random() * 60;
+        const dx = Math.cos(angle) * distance;
+        const dy = Math.sin(angle) * distance;
+
+        particle.style.setProperty('--dx', `${dx}px`);
+        particle.style.setProperty('--dy', `${dy}px`);
+
+        document.body.appendChild(particle);
+
+        setTimeout(() => {
+          particle.remove();
+        }, 600);
+      }
+    }
+
+    function startNewRound(changeLessonId = null) {
+      if (changeLessonId) {
+        currentLessonId = changeLessonId;
+      }
+      const lesson = getCurrentLesson();
+      const allWords = lesson.words;
+
+      // Randomly pick 10 words (or all if lesson has < 10)
+      const shuffled = [...allWords].sort(() => 0.5 - Math.random());
+      currentRoundWords = shuffled.slice(0, Math.min(10, shuffled.length));
+      roundPoppedIds.clear();
+
+      // Cycle to next color palette theme
+      currentThemeIndex = (currentThemeIndex + 1) % BUBBLE_THEMES.length;
+      applyTheme(BUBBLE_THEMES[currentThemeIndex]);
+
+      // Clear existing bubble elements
+      activeBubbles.forEach(b => b.element.remove());
+      activeBubbles.length = 0;
+
+      // Spawn initial bubbles for all 10 picked words
+      currentRoundWords.forEach(w => {
+        spawnSingleBubble(w);
+      });
+      // Add a couple extra duplicates for playfulness
+      if (currentRoundWords.length >= 2) {
+        spawnSingleBubble(currentRoundWords[0]);
+        spawnSingleBubble(currentRoundWords[1]);
+      }
+
+      // Update UI displays
+      roundIndex++;
+      document.getElementById('roundCounterText').textContent = `第 ${roundIndex} 局`;
+      updateProgressUI();
+
+      // 為本局選定第一個隨機目標生詞圖片
+      setRandomTargetWord();
+    }
+
+    function setRandomTargetWord() {
+      if (currentRoundWords.length === 0) return;
+
+      // 優先從本局尚未戳破的字詞中隨機抽取目標
+      const unpopped = currentRoundWords.filter(w => !roundPoppedIds.has(w.id));
+      if (unpopped.length > 0) {
+        currentTargetWord = unpopped[Math.floor(Math.random() * unpopped.length)];
+      } else {
+        currentTargetWord = currentRoundWords[Math.floor(Math.random() * currentRoundWords.length)];
+      }
+
+      renderTargetQuestCard();
+
+      // 確保場上至少有一顆對應目標詞的泡泡，讓學生隨時找得到
+      const existsInPlayground = activeBubbles.some(b => b.vocab.id === currentTargetWord.id);
+      if (!existsInPlayground) {
+        spawnSingleBubble(currentTargetWord);
+      }
+    }
+
+    function renderTargetQuestCard() {
+      if (!currentTargetWord) return;
+
+      const container = document.getElementById('questImageContainer');
+      container.innerHTML = getWordImageSVG(currentTargetWord.text);
+
+      const hintText = document.getElementById('questWordHintText');
+      hintText.textContent = currentTargetWord.text;
+      if (!isHintWordVisible) {
+        hintText.classList.add('hidden');
+      } else {
+        hintText.classList.remove('hidden');
+      }
+    }
+
+    function applyTheme(theme) {
+      const root = document.documentElement;
+      root.style.setProperty('--bubble-bg-gradient', theme.bubbleGradient);
+      root.style.setProperty('--bubble-shadow', theme.shadow);
+      root.style.setProperty('--bubble-border', theme.border);
+      root.style.setProperty('--page-gradient', theme.pageGradient);
+
+      // Update theme badge in header
+      document.getElementById('themeNameText').textContent = theme.name;
+      document.getElementById('themeDot').style.backgroundColor = theme.dotColor;
+      const badge = document.getElementById('themeBadge');
+      badge.style.backgroundColor = theme.badgeBg;
+      badge.style.color = theme.badgeText;
+      badge.style.borderColor = theme.dotColor + '55';
+    }
+
+    function spawnSingleBubble(customVocab) {
+      if (currentRoundWords.length === 0) return;
+      // Prioritize unpopped words for the round
+      let vocab = customVocab;
+      if (!vocab) {
+        const unpopped = currentRoundWords.filter(w => !roundPoppedIds.has(w.id));
+        if (unpopped.length > 0 && Math.random() < 0.65) {
+          vocab = unpopped[Math.floor(Math.random() * unpopped.length)];
+        } else {
+          vocab = currentRoundWords[Math.floor(Math.random() * currentRoundWords.length)];
+        }
+      }
+      const b = new Bubble(vocab);
+      activeBubbles.push(b);
+      return b;
+    }
+
+    function handleWordPopped(vocab) {
+      const questCard = document.getElementById('questTargetCard');
+      const bounds = playground.getBoundingClientRect();
+
+      // 判斷是否戳中左上角看板的目標生詞
+      const isTargetHit = currentTargetWord && (vocab.id === currentTargetWord.id || vocab.text === currentTargetWord.text);
+
+      if (isTargetHit) {
+        // 正確答對：得 1 分！
+        gameScore += 1;
+        const scoreEl = document.getElementById('scoreDisplay');
+        scoreEl.textContent = gameScore;
+        scoreEl.classList.add('scale-125', 'text-emerald-500');
+        setTimeout(() => {
+          scoreEl.classList.remove('scale-125', 'text-emerald-500');
+        }, 300);
+
+        playScoreSound();
+        showScoreFloat(bounds.left + 80, bounds.top + 70, "+1 ⭐");
+
+        // 任務卡片閃爍成功綠光
+        questCard.classList.remove('quest-card-success');
+        void questCard.offsetWidth; // 強制重繪觸發動畫
+        questCard.classList.add('quest-card-success');
+
+        // 換下一個目標圖片
+        setTimeout(() => {
+          setRandomTargetWord();
+        }, 400);
+      } else {
+        // 點破非目標生詞：搖晃任務卡並溫柔提示
+        questCard.classList.remove('quest-card-shake');
+        void questCard.offsetWidth;
+        questCard.classList.add('quest-card-shake');
+      }
+
+      if (!roundPoppedIds.has(vocab.id)) {
+        roundPoppedIds.add(vocab.id);
+        updateProgressUI();
+
+        // Check if current round (10 words) is finished
+        if (roundPoppedIds.size === currentRoundWords.length) {
+          setTimeout(() => {
+            triggerVictory();
+          }, 350);
+        }
+      }
+    }
+
+    function updateProgressUI() {
+      const count = roundPoppedIds.size;
+      const total = currentRoundWords.length;
+      const percent = total > 0 ? (count / total) * 100 : 0;
+
+      document.getElementById('progressBar').style.width = `${percent}%`;
+      document.getElementById('progressText').textContent = `${count} / ${total} 個生詞`;
+
+      renderBadges();
+      if (!document.getElementById('modalCollection').classList.contains('hidden')) {
+        renderModalWordList();
+      }
+    }
+
+    function triggerVictory() {
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 }
+      });
+      speakWord("太棒了！本局生詞全部完成！");
+
+      const victoryModal = document.getElementById('modalVictory');
+      victoryModal.classList.remove('hidden');
+      victoryModal.classList.add('flex');
+    }
+
+    function renderBadges() {
+      const container = document.getElementById('badgesContainer');
+      container.innerHTML = currentRoundWords.map(item => {
+        const isPopped = roundPoppedIds.has(item.id);
+        return `
+          <button onclick="speakWord('${item.text}')" class="px-2.5 py-0.5 rounded-full text-xs font-black transition-all flex items-center gap-1 ${
+            isPopped 
+              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs' 
+              : 'bg-white/80 text-slate-500 border border-slate-200 opacity-65 hover:opacity-90'
+          }">
+            <span>${isPopped ? '✓' : '○'}</span>
+            <span>${item.text}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    let currentModalTab = 'round'; // 'round' or 'all'
+
+    function renderModalWordList() {
+      const modalList = document.getElementById('modalWordList');
+      const lesson = getCurrentLesson();
+      document.getElementById('modalLessonTitle').textContent = `${lesson.name} 生字手冊`;
+      document.getElementById('tabRoundCount').textContent = roundPoppedIds.size;
+      document.getElementById('tabTotalCount').textContent = lesson.words.length;
+
+      const wordsToShow = currentModalTab === 'round' ? currentRoundWords : lesson.words;
+
+      modalList.innerHTML = wordsToShow.map(item => {
+        const isPopped = roundPoppedIds.has(item.id);
+        return `
+          <div class="p-2.5 sm:px-4 sm:py-3 rounded-2xl border transition-all duration-150 flex items-center justify-between gap-3 ${
+            isPopped 
+              ? 'bg-pink-50/90 border-pink-200 text-pink-900 shadow-xs' 
+              : 'bg-slate-50/90 border-slate-200 text-slate-700 hover:bg-white hover:border-indigo-200 hover:shadow-xs'
+          }">
+            <!-- Left: Word Display & Speak -->
+            <div onclick="speakWord('${item.text}')" class="flex items-center gap-2 cursor-pointer group min-w-0" title="點擊朗讀此生詞">
+              <div class="overflow-visible py-1">
+                ${createZhuyinWordHTML(item, 0.78, 'left center')}
+              </div>
+              <span class="text-xs sm:text-sm text-indigo-400 group-hover:text-indigo-600 transition shrink-0 ml-1">🔊</span>
+            </div>
+
+            <!-- Right: Action Buttons (Status, Edit, Delete) - 永不被遮擋 -->
+            <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              <span class="text-[10px] sm:text-[11px] px-2.5 py-1 rounded-full font-black tracking-wide ${
+                isPopped ? 'bg-pink-200 text-pink-800' : 'bg-slate-200 text-slate-600'
+              }">${isPopped ? '本局已過' : '待練習'}</span>
+              
+              <button onclick="openEditWordModal('${item.id}', event)" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-black border border-indigo-200 transition flex items-center gap-1 active:scale-95 shadow-2xs" title="修改這個生詞的國字與注音">
+                <span>✏️</span>
+                <span>修改</span>
+              </button>
+
+              <button onclick="deleteWordById('${item.id}', event)" class="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-black border border-rose-200 transition flex items-center gap-1 active:scale-95 shadow-2xs" title="刪除此生字">
+                <span>🗑️</span>
+                <span>刪除</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function deleteWordById(wordId, event) {
+      if (event) event.stopPropagation();
+      const lesson = getCurrentLesson();
+      const targetIndex = lesson.words.findIndex(w => w.id === wordId);
+      if (targetIndex === -1) return;
+
+      const deletedWord = lesson.words[targetIndex];
+      lesson.words.splice(targetIndex, 1);
+      saveLessons();
+
+      // 從目前本局抽取的詞中移除
+      const roundIdx = currentRoundWords.findIndex(w => w.id === wordId);
+      if (roundIdx !== -1) {
+        currentRoundWords.splice(roundIdx, 1);
+        roundPoppedIds.delete(wordId);
+      }
+
+      // 移除畫面上對應的活躍泡泡
+      for (let i = activeBubbles.length - 1; i >= 0; i--) {
+        if (activeBubbles[i].vocab.id === wordId) {
+          activeBubbles[i].element.remove();
+          activeBubbles.splice(i, 1);
+        }
+      }
+
+      // 如果泡泡變少則補充
+      while (activeBubbles.length < Math.min(8, currentRoundWords.length)) {
+        spawnSingleBubble();
+      }
+
+      updateProgressUI();
+      renderModalWordList();
+      populateLessonSelect();
+    }
+
+    function openEditWordModal(wordId, event) {
+      if (event) event.stopPropagation();
+      const lesson = getCurrentLesson();
+      const targetWord = lesson.words.find(w => w.id === wordId);
+      if (!targetWord) return;
+
+      editingWordId = wordId;
+      const modalEdit = document.getElementById('modalEditWord');
+      const inputText = document.getElementById('inputEditWordText');
+      const errorMsg = document.getElementById('editWordError');
+
+      inputText.value = targetWord.text;
+      errorMsg.classList.add('hidden');
+      renderEditCharFields(targetWord.text, targetWord.chars);
+
+      modalEdit.classList.remove('hidden');
+      modalEdit.classList.add('flex');
+    }
+
+    function renderEditCharFields(text, existingChars = []) {
+      const charSetupList = document.getElementById('editCharSetupList');
+      charSetupList.innerHTML = '';
+      if (!text || text.trim().length === 0) {
+        charSetupList.innerHTML = '<p class="text-xs text-slate-400 italic py-2">請輸入生詞文字...</p>';
+        return;
+      }
+
+      const chars = text.trim().split('');
+      chars.forEach((c, index) => {
+        const exist = existingChars[index] || {};
+        const existBpmf = Array.isArray(exist.bpmf) ? exist.bpmf.join('') : '';
+        const existTone = exist.tone !== undefined ? exist.tone : '';
+
+        const card = document.createElement('div');
+        card.className = 'p-2.5 rounded-xl bg-slate-50 border border-indigo-100 flex items-center gap-3';
+        card.innerHTML = `
+          <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-800 font-black text-xl flex items-center justify-center shrink-0 border border-indigo-200">
+            ${c}
+          </div>
+          <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] text-slate-500 font-bold mb-0.5">注音符號 (例如 ㄆㄠ)</label>
+              <input type="text" class="edit-bpmf-input w-full px-2 py-1 text-xs border rounded-lg border-slate-300 font-bold" value="${existBpmf}" placeholder="注音符號">
+            </div>
+            <div>
+              <label class="block text-[10px] text-slate-500 font-bold mb-0.5">聲調標記</label>
+              <select class="edit-tone-select w-full px-2 py-1 text-xs border rounded-lg border-slate-300 font-bold bg-white">
+                <option value="" ${existTone === '' ? 'selected' : ''}>一聲 (無符號)</option>
+                <option value="ˊ" ${existTone === 'ˊ' ? 'selected' : ''}>二聲 ( ˊ )</option>
+                <option value="ˇ" ${existTone === 'ˇ' ? 'selected' : ''}>三聲 ( ˇ )</option>
+                <option value="ˋ" ${existTone === 'ˋ' ? 'selected' : ''}>四聲 ( ˋ )</option>
+                <option value="˙" ${existTone === '˙' ? 'selected' : ''}>輕聲 ( ˙ )</option>
+              </select>
+            </div>
+          </div>
+        `;
+        charSetupList.appendChild(card);
+      });
+    }
+
+    function initEditWordModal() {
+      const modalEdit = document.getElementById('modalEditWord');
+      const btnCloseEdit = document.getElementById('btnCloseEditModal');
+      const btnCancelEdit = document.getElementById('btnCancelEditWord');
+      const btnConfirmEdit = document.getElementById('btnConfirmEditWord');
+      const inputText = document.getElementById('inputEditWordText');
+      const errorMsg = document.getElementById('editWordError');
+
+      function closeEditModal() {
+        modalEdit.classList.add('hidden');
+        modalEdit.classList.remove('flex');
+        editingWordId = null;
+      }
+
+      btnCloseEdit.addEventListener('click', closeEditModal);
+      btnCancelEdit.addEventListener('click', closeEditModal);
+      modalEdit.addEventListener('click', (e) => {
+        if (e.target === modalEdit) closeEditModal();
+      });
+
+      inputText.addEventListener('input', (e) => {
+        renderEditCharFields(e.target.value);
+      });
+
+      btnConfirmEdit.addEventListener('click', () => {
+        if (!editingWordId) return;
+        const text = inputText.value.trim();
+        const lesson = getCurrentLesson();
+        const wordObj = lesson.words.find(w => w.id === editingWordId);
+        if (!wordObj) return;
+
+        if (!text) {
+          errorMsg.textContent = '生詞文字不可為空！';
+          errorMsg.classList.remove('hidden');
+          return;
+        }
+
+        const charSetupList = document.getElementById('editCharSetupList');
+        const bpmfInputs = charSetupList.querySelectorAll('.edit-bpmf-input');
+        const toneSelects = charSetupList.querySelectorAll('.edit-tone-select');
+        const updatedChars = [];
+
+        for (let i = 0; i < text.length; i++) {
+          const rawBpmf = bpmfInputs[i] ? bpmfInputs[i].value.trim() : '';
+          const tone = toneSelects[i] ? toneSelects[i].value : '';
+
+          if (!rawBpmf) {
+            errorMsg.textContent = `請填寫第 ${i + 1} 個字「${text[i]}」的注音！`;
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+
+          const bpmfArray = rawBpmf.split('').filter(ch => ch.trim() !== '');
+          updatedChars.push({
+            char: text[i],
+            bpmf: bpmfArray,
+            tone: tone,
+            isLight: tone === '˙'
+          });
+        }
+
+        // 更新生字物件資料
+        wordObj.text = text;
+        wordObj.chars = updatedChars;
+        saveLessons();
+
+        // 同步更新當前活躍泡泡外觀與尺寸
+        activeBubbles.forEach(b => {
+          if (b.vocab.id === editingWordId) {
+            b.vocab = wordObj;
+            const charCount = wordObj.chars.length;
+            b.radius = getBubbleRadius(charCount);
+            b.diameter = b.radius * 2;
+            b.element.style.width = `${b.diameter}px`;
+            b.element.style.height = `${b.diameter}px`;
+            b.element.innerHTML = createZhuyinWordHTML(wordObj, getBubbleScale(charCount));
+          }
+        });
+
+        // 更新本局生字與下方進度列
+        const roundWord = currentRoundWords.find(w => w.id === editingWordId);
+        if (roundWord) {
+          roundWord.text = text;
+          roundWord.chars = updatedChars;
+        }
+
+        updateProgressUI();
+        renderModalWordList();
+        speakWord(text);
+        closeEditModal();
+      });
+    }
+
+    function setSpeed(newSpeed, activeBtn) {
+      speedFactor = parseFloat(newSpeed);
+      document.querySelectorAll('.speed-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-indigo-600', 'shadow-xs');
+        btn.classList.add('text-slate-600');
+      });
+      activeBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-xs');
+      activeBtn.classList.remove('text-slate-600');
+
+      // Adjust existing active bubble velocities immediately
+      activeBubbles.forEach(b => {
+        const signX = b.vx >= 0 ? 1 : -1;
+        const signY = b.vy >= 0 ? 1 : -1;
+        b.vx = signX * Math.abs(b.vx) * (speedFactor / 1.0);
+        b.vy = signY * Math.abs(b.vy) * (speedFactor / 1.0);
+      });
+    }
+
+    function animatePhysics() {
+      const bounds = playground.getBoundingClientRect();
+      const width = bounds.width;
+      const height = bounds.height;
+
+      for (let i = 0; i < activeBubbles.length; i++) {
+        activeBubbles[i].update(width, height);
+      }
+
+      animationFrameId = requestAnimationFrame(animatePhysics);
+    }
+
+    function applyBreeze() {
+      activeBubbles.forEach(b => {
+        b.vx += (Math.random() - 0.5) * 4.0 * speedFactor;
+        b.vy -= (1.6 + Math.random() * 2.2) * speedFactor;
+      });
+      playPopSound();
+    }
+
+    function initAddWordModal() {
+      const modalAdd = document.getElementById('modalAddWord');
+      const btnAddWord = document.getElementById('btnAddWord');
+      const btnCloseAdd = document.getElementById('btnCloseAddModal');
+      const btnCancelAdd = document.getElementById('btnCancelAddWord');
+      const btnConfirmAdd = document.getElementById('btnConfirmAddWord');
+      const inputText = document.getElementById('inputNewWordText');
+      const charSetupList = document.getElementById('charSetupList');
+      const errorMsg = document.getElementById('addWordError');
+      const selectTargetLesson = document.getElementById('selectTargetLesson');
+
+      function updateLessonDropdown() {
+        selectTargetLesson.innerHTML = LESSON_DB.map(l => 
+          `<option value="${l.id}" ${l.id === currentLessonId ? 'selected' : ''}>${l.name}</option>`
+        ).join('');
+      }
+
+      function openModal() {
+        updateLessonDropdown();
+        modalAdd.classList.remove('hidden');
+        modalAdd.classList.add('flex');
+        inputText.value = '';
+        charSetupList.innerHTML = '<p class="text-xs text-slate-400 italic py-2">請先在上方輸入生詞文字...</p>';
+        errorMsg.classList.add('hidden');
+        inputText.focus();
+      }
+
+      function closeModal() {
+        modalAdd.classList.add('hidden');
+        modalAdd.classList.remove('flex');
+      }
+
+      btnAddWord.addEventListener('click', openModal);
+      btnCloseAdd.addEventListener('click', closeModal);
+      btnCancelAdd.addEventListener('click', closeModal);
+      modalAdd.addEventListener('click', (e) => {
+        if (e.target === modalAdd) closeModal();
+      });
+
+      function renderCharFields(text, prefilledBpmf = []) {
+        charSetupList.innerHTML = '';
+        if (!text || text.trim().length === 0) {
+          charSetupList.innerHTML = '<p class="text-xs text-slate-400 italic py-2">請先在上方輸入生詞文字...</p>';
+          return;
+        }
+
+        const chars = text.trim().split('');
+        chars.forEach((c, index) => {
+          const prefill = prefilledBpmf[index] || '';
+          let defaultTone = '';
+          let defaultBpmf = prefill;
+
+          if (prefill.endsWith('ˊ')) {
+            defaultTone = 'ˊ';
+            defaultBpmf = prefill.replace('ˊ', '');
+          } else if (prefill.endsWith('ˇ')) {
+            defaultTone = 'ˇ';
+            defaultBpmf = prefill.replace('ˇ', '');
+          } else if (prefill.endsWith('ˋ')) {
+            defaultTone = 'ˋ';
+            defaultBpmf = prefill.replace('ˋ', '');
+          } else if (prefill.endsWith('˙') || prefill.startsWith('˙')) {
+            defaultTone = '˙';
+            defaultBpmf = prefill.replace(/˙/g, '');
+          }
+
+          const card = document.createElement('div');
+          card.className = 'p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3';
+          card.innerHTML = `
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 font-black text-xl flex items-center justify-center shrink-0 border border-emerald-200">
+              ${c}
+            </div>
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-slate-500 font-bold mb-0.5">注音符號 (例如 ㄆㄧㄥ)</label>
+                <input type="text" class="char-bpmf-input w-full px-2 py-1 text-xs border rounded-lg border-slate-300 font-bold" value="${defaultBpmf}" placeholder="注音符號">
+              </div>
+              <div>
+                <label class="block text-[10px] text-slate-500 font-bold mb-0.5">聲調標記</label>
+                <select class="char-tone-select w-full px-2 py-1 text-xs border rounded-lg border-slate-300 font-bold bg-white">
+                  <option value="" ${defaultTone === '' ? 'selected' : ''}>一聲 (無符號)</option>
+                  <option value="ˊ" ${defaultTone === 'ˊ' ? 'selected' : ''}>二聲 ( ˊ )</option>
+                  <option value="ˇ" ${defaultTone === 'ˇ' ? 'selected' : ''}>三聲 ( ˇ )</option>
+                  <option value="ˋ" ${defaultTone === 'ˋ' ? 'selected' : ''}>四聲 ( ˋ )</option>
+                  <option value="˙" ${defaultTone === '˙' ? 'selected' : ''}>輕聲 ( ˙ )</option>
+                </select>
+              </div>
+            </div>
+          `;
+          charSetupList.appendChild(card);
+        });
+      }
+
+      inputText.addEventListener('input', (e) => {
+        renderCharFields(e.target.value);
+      });
+
+      document.querySelectorAll('.btn-sample-word').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const sampleWord = btn.getAttribute('data-word');
+          const sampleBpmf = btn.getAttribute('data-bpmf').split(',');
+          inputText.value = sampleWord;
+          renderCharFields(sampleWord, sampleBpmf);
+        });
+      });
+
+      btnConfirmAddWord.addEventListener('click', () => {
+        const text = inputText.value.trim();
+        const targetLessonId = selectTargetLesson.value;
+        const targetLesson = LESSON_DB.find(l => l.id === targetLessonId);
+
+        if (!text) {
+          errorMsg.textContent = '請輸入生詞文字！';
+          errorMsg.classList.remove('hidden');
+          return;
+        }
+
+        const bpmfInputs = charSetupList.querySelectorAll('.char-bpmf-input');
+        const toneSelects = charSetupList.querySelectorAll('.char-tone-select');
+        const charObjs = [];
+
+        for (let i = 0; i < text.length; i++) {
+          const rawBpmf = bpmfInputs[i] ? bpmfInputs[i].value.trim() : '';
+          const tone = toneSelects[i] ? toneSelects[i].value : '';
+
+          if (!rawBpmf) {
+            errorMsg.textContent = `請填寫第 ${i + 1} 個字「${text[i]}」的注音！`;
+            errorMsg.classList.remove('hidden');
+            return;
+          }
+
+          const bpmfArray = rawBpmf.split('').filter(ch => ch.trim() !== '');
+          charObjs.push({
+            char: text[i],
+            bpmf: bpmfArray,
+            tone: tone,
+            isLight: tone === '˙'
+          });
+        }
+
+        const newVocab = {
+          id: 'custom-' + Date.now(),
+          text: text,
+          chars: charObjs
+        };
+
+        targetLesson.words.push(newVocab);
+        saveLessons();
+
+        // If target lesson is current lesson, also push into current round
+        if (targetLessonId === currentLessonId) {
+          currentRoundWords.unshift(newVocab);
+          spawnSingleBubble(newVocab);
+          spawnSingleBubble(newVocab);
+          updateProgressUI();
+        }
+
+        speakWord(text);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        closeModal();
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Setup Lesson Selector in Top Bar
+      const lessonSelect = document.getElementById('lessonSelect');
+      function populateLessonSelect() {
+        lessonSelect.innerHTML = LESSON_DB.map(l => 
+          `<option value="${l.id}" ${l.id === currentLessonId ? 'selected' : ''}>${l.name} (${l.words.length}詞)</option>`
+        ).join('');
+      }
+      populateLessonSelect();
+
+      lessonSelect.addEventListener('change', (e) => {
+        currentLessonId = e.target.value;
+        startNewRound();
+      });
+
+      // Speed control listeners
+      const btnSlow = document.getElementById('speedSlow');
+      const btnNormal = document.getElementById('speedNormal');
+      const btnFast = document.getElementById('speedFast');
+
+      btnSlow.addEventListener('click', () => setSpeed(btnSlow.dataset.speed, btnSlow));
+      btnNormal.addEventListener('click', () => setSpeed(btnNormal.dataset.speed, btnNormal));
+      btnFast.addEventListener('click', () => setSpeed(btnFast.dataset.speed, btnFast));
+
+      // Voice toggle
+      const btnVoice = document.getElementById('btnVoiceToggle');
+      const voiceIcon = document.getElementById('voiceIcon');
+      const voiceText = document.getElementById('voiceText');
+      btnVoice.addEventListener('click', () => {
+        isVoiceEnabled = !isVoiceEnabled;
+        voiceIcon.textContent = isVoiceEnabled ? '🔊' : '🔇';
+        voiceText.textContent = isVoiceEnabled ? '語音: 開' : '語音: 關';
+        btnVoice.classList.toggle('opacity-50', !isVoiceEnabled);
+      });
+
+      // Breeze button
+      document.getElementById('btnBreeze').addEventListener('click', applyBreeze);
+
+      // New Round button
+      document.getElementById('btnNewRound').addEventListener('click', () => {
+        startNewRound();
+        playPopSound();
+      });
+
+      // Word Bank Modal Tab Buttons
+      const tabCurrent = document.getElementById('tabCurrentRound');
+      const tabAll = document.getElementById('tabAllLesson');
+      tabCurrent.addEventListener('click', () => {
+        currentModalTab = 'round';
+        tabCurrent.className = 'flex-1 py-1.5 text-xs font-black rounded-xl bg-indigo-500 text-white shadow-xs transition';
+        tabAll.className = 'flex-1 py-1.5 text-xs font-black rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+        renderModalWordList();
+      });
+      tabAll.addEventListener('click', () => {
+        currentModalTab = 'all';
+        tabAll.className = 'flex-1 py-1.5 text-xs font-black rounded-xl bg-indigo-500 text-white shadow-xs transition';
+        tabCurrent.className = 'flex-1 py-1.5 text-xs font-black rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200 transition';
+        renderModalWordList();
+      });
+
+      // Modal open & close
+      const modalCollection = document.getElementById('modalCollection');
+      document.getElementById('btnLessonBook').addEventListener('click', () => {
+        renderModalWordList();
+        modalCollection.classList.remove('hidden');
+        modalCollection.classList.add('flex');
+      });
+      document.getElementById('btnCloseModal').addEventListener('click', () => {
+        modalCollection.classList.add('hidden');
+        modalCollection.classList.remove('flex');
+      });
+      modalCollection.addEventListener('click', (e) => {
+        if (e.target === modalCollection) {
+          modalCollection.classList.add('hidden');
+          modalCollection.classList.remove('flex');
+        }
+      });
+
+      document.getElementById('btnModalStartNewRound').addEventListener('click', () => {
+        startNewRound();
+        renderModalWordList();
+      });
+
+      // Reset & restore
+      document.getElementById('btnResetProgress').addEventListener('click', () => {
+        roundPoppedIds.clear();
+        updateProgressUI();
+      });
+      document.getElementById('btnRestoreDefaults').addEventListener('click', () => {
+        LESSON_DB = JSON.parse(JSON.stringify(DEFAULT_LESSONS));
+        saveLessons();
+        populateLessonSelect();
+        startNewRound();
+        renderModalWordList();
+      });
+
+      // Victory Dialog Buttons
+      const victoryModal = document.getElementById('modalVictory');
+      document.getElementById('btnVictoryNextRound').addEventListener('click', () => {
+        victoryModal.classList.add('hidden');
+        victoryModal.classList.remove('flex');
+        startNewRound();
+      });
+      document.getElementById('btnVictoryClose').addEventListener('click', () => {
+        victoryModal.classList.add('hidden');
+        victoryModal.classList.remove('flex');
+      });
+
+      // Gentle interactive mouse deflection
+      playground.addEventListener('pointermove', (e) => {
+        const mx = e.clientX;
+        const my = e.clientY;
+        activeBubbles.forEach(b => {
+          const dx = b.x - mx;
+          const dy = b.y - my;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 130 && dist > 8) {
+            const force = (130 - dist) / 130;
+            b.vx += (dx / dist) * force * 0.45 * speedFactor;
+            b.vy += (dy / dist) * force * 0.45 * speedFactor;
+          }
+        });
+      });
+
+      // Initialize add modal, edit modal, round and start physics loop
+      initAddWordModal();
+      initEditWordModal();
+      startNewRound();
+      animatePhysics();
+
+      // 目標卡片語音發音與提示按鈕綁定
+      document.getElementById('btnQuestVoiceHint').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentTargetWord) {
+          speakWord(`請找出：${currentTargetWord.text}`);
+        }
+      });
+
+      document.getElementById('questImageContainer').addEventListener('click', () => {
+        if (currentTargetWord) {
+          speakWord(currentTargetWord.text);
+        }
+      });
+
+      document.getElementById('btnToggleWordHint').addEventListener('click', () => {
+        isHintWordVisible = !isHintWordVisible;
+        const hintText = document.getElementById('questWordHintText');
+        const toggleBtn = document.getElementById('btnToggleWordHint');
+        if (isHintWordVisible) {
+          hintText.classList.remove('hidden');
+          toggleBtn.textContent = '🙈 隱藏答案';
+        } else {
+          hintText.classList.add('hidden');
+          toggleBtn.textContent = '💡 看答案提示';
+        }
+      });
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => {
+          window.speechSynthesis.getVoices();
+        };
+      }
+    });
+
+    window.addEventListener('resize', () => {
+      const bounds = playground.getBoundingClientRect();
+      activeBubbles.forEach(b => {
+        b.x = Math.min(bounds.width - b.radius, Math.max(b.radius, b.x));
+        b.y = Math.min(bounds.height - b.radius, Math.max(b.radius, b.y));
+      });
+    });
+  </script>
+</body>
+</html>
